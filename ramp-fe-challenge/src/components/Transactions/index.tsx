@@ -1,41 +1,30 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback } from "react"
 import { useCustomFetch } from "src/hooks/useCustomFetch"
 import { SetTransactionApprovalParams } from "src/utils/types"
 import { TransactionPane } from "./TransactionPane"
 import { SetTransactionApprovalFunction, TransactionsComponent } from "./types"
 
 export const Transactions: TransactionsComponent = ({ transactions }) => {
-  const { fetchWithoutCache, loading } = useCustomFetch()
-  const [localTransactions, setLocalTransactions] = useState(transactions);
-
-  useEffect(() => {
-    setLocalTransactions(transactions);
-  }, [transactions]);
+  const { fetchWithoutCache, loading, clearCacheByEndpoint } = useCustomFetch()
 
   const setTransactionApproval = useCallback<SetTransactionApprovalFunction>(
     async ({ transactionId, newValue }) => {
       await fetchWithoutCache<void, SetTransactionApprovalParams>("setTransactionApproval", {
         transactionId,
         value: newValue,
-      });
-
-      setLocalTransactions((prevTransactions) =>
-        prevTransactions && prevTransactions.map((transaction) =>
-          transaction.id === transactionId ? { ...transaction, approved: newValue } : transaction
-        )
-      );
-
+      })
+      clearCacheByEndpoint(['transactionsByEmployee'])
     },
-    [fetchWithoutCache]
+    [fetchWithoutCache, clearCacheByEndpoint]
   )
 
-  if (localTransactions === null) {
+  if (transactions === null) {
     return <div className="RampLoading--container">Loading...</div>
   }
 
   return (
     <div data-testid="transaction-container">
-      {localTransactions.map((transaction) => (
+      {transactions.map((transaction) => (
         <TransactionPane
           key={transaction.id}
           transaction={transaction}
